@@ -2,9 +2,20 @@
 // Include database connection
 include 'DBconnect.php';
 
-// Fetch products from the database
-$sql = "SELECT * FROM products";
-$result = $conn->query($sql);
+// Get category_id from GET parameters without sanitization (for SQL injection testing)
+$category_id = isset($_GET['category_id']) ? $_GET['category_id'] : '';
+
+// Fetch categories for the list at the top
+$categorySql = "SELECT * FROM categories";
+$categoriesResult = $conn->query($categorySql);
+
+// Build the main product SQL query
+$productSql = "SELECT * FROM products";
+if (!empty($category_id)) {
+    $productSql .= " WHERE cat_id = $category_id";
+}
+
+$productsResult = $conn->query($productSql);
 ?>
 
 <!DOCTYPE html>
@@ -13,7 +24,7 @@ $result = $conn->query($sql);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Items and Products Page</title>
+    <title>Product Store </title>
     <!-- Bootstrap CSS CDN -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 </head>
@@ -22,87 +33,53 @@ $result = $conn->query($sql);
 
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="#">Product Store</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ml-auto">
-                <li class="nav-item active">
-                    <a class="nav-link" href="#">Home</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Products</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Contact</a>
-                </li>
-            </ul>
-        </div>
+        <a class="navbar-brand" href="Index.php">Product Store</a>
+        <a class="" href="manage_products.php">Products</a>
     </nav>
 
-    <!-- Carousel -->
-    <div id="productCarousel" class="carousel slide" data-ride="carousel">
-        <div class="carousel-inner">
-            <div class="carousel-item active">
-                <img class="d-block w-100" src="https://via.placeholder.com/1200x400" alt="First slide">
-                <div class="carousel-caption d-none d-md-block">
-                    <h5>Featured Product 1</h5>
-                    <p>Best deal of the season!</p>
-                </div>
-            </div>
-            <div class="carousel-item">
-                <img class="d-block w-100" src="https://via.placeholder.com/1200x400" alt="Second slide">
-                <div class="carousel-caption d-none d-md-block">
-                    <h5>Featured Product 2</h5>
-                    <p>Limited time offer!</p>
-                </div>
-            </div>
-            <div class="carousel-item">
-                <img class="d-block w-100" src="https://via.placeholder.com/1200x400" alt="Third slide">
-                <div class="carousel-caption d-none d-md-block">
-                    <h5>Featured Product 3</h5>
-                    <p>New arrivals!</p>
-                </div>
-            </div>
-        </div>
-        <a class="carousel-control-prev" href="#productCarousel" role="button" data-slide="prev">
-            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-            <span class="sr-only">Previous</span>
-        </a>
-        <a class="carousel-control-next" href="#productCarousel" role="button" data-slide="next">
-            <span class="carousel-control-next-icon" aria-hidden="true"></span>
-            <span class="sr-only">Next</span>
-        </a>
-    </div>
-
-    <!-- Product Cards Section -->
+    <!-- Categories Row -->
     <div class="container mt-5">
-        <h2 class="text-center mb-4">Our Products</h2>
+        <h2 class="text-center mb-4">Categories</h2>
         <div class="row">
             <?php
-            if ($result->num_rows > 0) {
-                while ($row = $result->fetch_assoc()) {
+            if ($categoriesResult && $categoriesResult->num_rows > 0) {
+                while ($category = $categoriesResult->fetch_assoc()) {
+                    echo '
+                    <div class="col-md-2 text-center mb-3">
+                        <a href="?category_id=' . $category["id"] . '" class="btn btn-secondary">' . htmlspecialchars($category["name"]) . '</a>
+                    </div>';
+                }
+            } else {
+                echo '<p class="text-center">No categories found.</p>';
+            }
+            ?>
+        </div>
+
+        <!-- Products List -->
+        <h2 class="text-center mt-4 mb-4">Products</h2>
+        <div class="row">
+            <?php
+            if ($productsResult && $productsResult->num_rows > 0) {
+                while ($product = $productsResult->fetch_assoc()) {
                     echo '
                     <div class="col-md-4">
-                        <div class="card">
-                            <img class="card-img-top" src="' . $row["image_url"] . '" alt="' . $row["name"] . '">
+                        <div class="card mb-4">
+                            <img class="card-img-top" src="' . htmlspecialchars($product["image_url"]) . '" alt="' . htmlspecialchars($product["name"]) . '">
                             <div class="card-body">
-                                <h5 class="card-title">' . $row["name"] . '</h5>
-                                <p class="card-text">' . $row["description"] . '</p>
-                                <p class="card-text"><strong>$' . $row["price"] . '</strong></p>
+                                <h5 class="card-title">' . htmlspecialchars($product["name"]) . '</h5>
+                                <p class="card-text">' . htmlspecialchars($product["description"]) . '</p>
+                                <p class="card-text"><strong>$' . htmlspecialchars($product["price"]) . '</strong></p>
                                 <a href="#" class="btn btn-primary">View Details</a>
                             </div>
                         </div>
                     </div>';
                 }
             } else {
-                echo '<p>No products found.</p>';
+                echo '<p class="text-center">No products found in this category.</p>';
             }
             ?>
         </div>
     </div>
-
 
     <!-- Bootstrap JS and dependencies -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>

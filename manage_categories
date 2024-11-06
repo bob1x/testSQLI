@@ -1,0 +1,126 @@
+<?php
+// Include database connection
+include 'DBconnect.php';
+
+// Handle form submission for creating and updating categories
+if (isset($_POST['add_category'])) {
+    $category_name = $_POST['category_name']; // Raw input for testing
+    
+    // Insecure SQL for inserting category
+    $sql_category = "INSERT INTO categories (name) VALUES ('$category_name')";
+    echo "Category Insert Query: " . $sql_category . "<br>"; // Debugging purpose
+
+    if (!$conn->query($sql_category)) {
+        echo "Error: " . $conn->error;
+    }
+} elseif (isset($_POST['edit_category'])) {
+    $category_id = $_POST['category_id'];
+    $category_name = $_POST['category_name']; // Raw input for testing
+    
+    // Insecure SQL for updating category
+    $sql_update_category = "UPDATE categories SET name='$category_name' WHERE id=$category_id";
+    echo "Category Update Query: " . $sql_update_category . "<br>";
+
+    if (!$conn->query($sql_update_category)) {
+        echo "Error: " . $conn->error;
+    }
+} elseif (isset($_GET['delete_category_id'])) {
+    $delete_id = $_GET['delete_category_id'];
+    
+    // Insecure SQL for deleting category
+    $sql_delete_category = "DELETE FROM categories WHERE id=$delete_id";
+    echo "Category Delete Query: " . $sql_delete_category . "<br>";
+
+    if (!$conn->query($sql_delete_category)) {
+        echo "Error: " . $conn->error;
+    }
+}
+
+// Fetch categories for displaying them
+$sql_categories = "SELECT * FROM categories";
+$categories_result = $conn->query($sql_categories);
+?>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Categories</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container mt-5">
+        <h2 class="text-center mb-4">Manage Categories</h2>
+
+        <!-- Create/Update Form for Categories -->
+        <div class="card mb-5">
+            <div class="card-header">Add/Edit Category</div>
+            <div class="card-body">
+                <form method="POST" action="">
+                    <input type="hidden" name="category_id" id="category_id">
+                    <div class="form-group">
+                        <label for="category_name">Category Name</label>
+                        <input type="text" class="form-control" id="category_name" name="category_name" required>
+                    </div>
+                    <button type="submit" name="add_category" class="btn btn-primary">Save Category</button>
+                    <button type="submit" name="edit_category" class="btn btn-warning">Update Category</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Categories List -->
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Category Name</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php
+                    if ($categories_result && $categories_result->num_rows > 0) {
+                        while ($category = $categories_result->fetch_assoc()) {
+                            echo '
+                            <tr>
+                                <td>' . $category["id"] . '</td>
+                                <td>' . htmlspecialchars($category["name"]) . '</td>
+                                <td>
+                                    <button class="btn btn-info btn-edit-category" data-id="' . $category["id"] . '" data-name="' . htmlspecialchars($category["name"]) . '">Edit</button>
+                                    <a href="?delete_category_id=' . $category["id"] . '" class="btn btn-danger" onclick="return confirm(\'Are you sure you want to delete this category?\')">Delete</a>
+                                </td>
+                            </tr>';
+                        }
+                    } else {
+                        echo '<tr><td colspan="3" class="text-center">No categories found</td></tr>';
+                    }
+                    ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- JavaScript to Handle Category Edit Button Click -->
+    <script>
+        document.querySelectorAll('.btn-edit-category').forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                const name = this.getAttribute('data-name');
+
+                document.getElementById('category_id').value = id;
+                document.getElementById('category_name').value = name;
+            });
+        });
+    </script>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.7/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+</body>
+
+</html>
